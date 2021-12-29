@@ -36,7 +36,7 @@ class WidgetRestControllerTest {
 
 
     @Test
-    @DisplayName("GET /widgets success")
+    @DisplayName("GET /rest/widgets success")
     void testGetWidgetsSuccess() throws Exception {
         // Setup our mocked service
         Widget widget1 = new Widget(1l, "Widget Name", "Description", 1);
@@ -104,6 +104,46 @@ class WidgetRestControllerTest {
                 .andExpect(jsonPath("$.name", is("New Widget")))
                 .andExpect(jsonPath("$.description", is("This is my widget")))
                 .andExpect(jsonPath("$.version", is(1)));
+    }
+
+    @Test
+    @DisplayName("PUT /rest/widget/2 - Not Found")
+    void testPutWidgetNotFound() throws Exception {
+        // Setup our mocked service
+        Widget widgetToPost = new Widget("New Widget", "This is my widget");
+        Widget widgetToReturn = new Widget(1L, "New Widget", "This is my widget", 1);
+        doReturn(widgetToReturn).when(service).save(any());
+
+        // Execute the PUT request
+        mockMvc.perform(put("/rest/widget/{id}", 2L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(widgetToPost)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("PUT /rest/proper/widget")
+    void testUpdateWidget() throws Exception {
+        Widget widgetToPost = new Widget(1L, "Nuevo Widget", "Este es mi widget", 1);
+        Widget widgetToReturn = new Widget(1L, "Viejo Widget", "Este es mi viejo widget", 1);
+        doReturn(widgetToReturn).when(service).save(any());
+
+        mockMvc.perform(put("/rest/proper/widget/{id}", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(widgetToPost))
+                        .header("If-Match"))
+                .andExpect(status().isOk());
+
+    }
+
+    @Test
+    @DisplayName("Delete /rest/widget/1")
+    void testDeleteWidget() throws Exception {
+        Widget widgetToReturn = new Widget(1L, "Nuevo Widget", "Mi Widget", 1);
+        doReturn(widgetToReturn).when(service).save(any());
+
+        mockMvc.perform(delete("/rest/widget/{id}",1L))
+                .andExpect(status().isOk());
     }
 
 
