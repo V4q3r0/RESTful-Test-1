@@ -117,23 +117,49 @@ class WidgetRestControllerTest {
         // Execute the PUT request
         mockMvc.perform(put("/rest/widget/{id}", 2L)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(asJsonString(widgetToPost)))
+                        .content(asJsonString(widgetToPost))
+                        .header(HttpHeaders.IF_MATCH, 2))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("PUT /rest/proper/widget")
+    @DisplayName("PUT /rest/widget")
     void testUpdateWidget() throws Exception {
-        Widget widgetToPost = new Widget(1L, "Nuevo Widget", "Este es mi widget", 1);
-        Widget widgetToReturn = new Widget(1L, "Viejo Widget", "Este es mi viejo widget", 1);
-        doReturn(widgetToReturn).when(service).save(any());
+        Widget widgetToPost = new Widget("Viejo Widget", "Este es mi viejo widget");
+        Widget widgetToFind = new Widget(1L, "Viejo Widget", "Este es mi viejo widget", 2);
+        Widget widgetToSave = new Widget(1L, "Nuevo Widget", "Este es mi nuevo widget", 3);
 
-        mockMvc.perform(put("/rest/proper/widget/{id}", 1L)
+        doReturn(Optional.of(widgetToFind)).when(service).findById(1L);
+        doReturn(widgetToSave).when(service).save(any());
+
+        mockMvc.perform(put("/rest/widget/{id}", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(asJsonString(widgetToPost))
-                        .header("If-Match"))
-                .andExpect(status().isOk());
+                        .header(HttpHeaders.IF_MATCH, 2))
 
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.name", is("Nuevo Widget")))
+                .andExpect(jsonPath("$.description", is("Este es mi nuevo widget")))
+                .andExpect(jsonPath("$.version", is(3)));
+    }
+
+    @Test
+    @DisplayName("Get /rest/widget/1")
+    void testGetWidgetById() throws Exception {
+        Widget widgetToReturn = new Widget(1L, "Nuevo Widget", "Mi Widget", 1);
+        doReturn(Optional.of(widgetToReturn)).when(service).findById(1L);
+
+        mockMvc.perform(get("/rest/widget/{id}", 1L))
+                .andExpect(status().isOk())
+
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(header().string(HttpHeaders.LOCATION, "/rest/widget/1"))
+
+                .andExpect(jsonPath("$.id", is(1)))
+                .andExpect(jsonPath("$.name", is("Nuevo Widget")))
+                .andExpect(jsonPath("$.description", is("Mi Widget")))
+                .andExpect(jsonPath("$.version", is(1)));
     }
 
     @Test
